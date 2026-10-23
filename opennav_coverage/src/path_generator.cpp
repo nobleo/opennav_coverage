@@ -59,18 +59,34 @@ Path PathGenerator::generatePath(
 
 Path PathGenerator::assemblePath(const F2CRoute & route, f2c::pp::TurningBase & curve)
 {
-  auto & robot = robot_params_->getRobot();
   Path path;
   for (size_t i = 0; i < route.sizeVectorSwaths(); ++i) {
     const Swaths prev = (i > 0) ? route.getSwaths(i - 1) : Swaths();
     const F2CMultiPoint connection =
       (i < route.sizeConnections()) ? route.getConnection(i) : F2CMultiPoint();
     appendConnection(path, prev, connection, route.getSwaths(i), curve);
-    path += generator_->planPath(robot, route.getSwaths(i), curve);
+    path += planPath(route.getSwaths(i), curve);
   }
   if (route.sizeConnections() > route.sizeVectorSwaths()) {
     appendConnection(
       path, route.getLastSwaths(), route.getLastConnection(), Swaths(), curve);
+  }
+  return path;
+}
+
+Path PathGenerator::planPath(const Swaths & swaths, f2c::pp::TurningBase & curve) const
+{
+  // Not generator_->planPath(): Fields2Cover calls turn_path.discretize(0.1) on every turn,
+  // which throws away the curve's turn_point_distance resolution.
+  const auto & robot = robot_params_->getRobot();
+  Path path;
+  for (size_t i = 0; i < swaths.size(); ++i) {
+    path.appendSwath(swaths[i], robot.getCruiseVel());
+    if (i + 1 < swaths.size()) {
+      path += curve.createTurn(
+        robot, swaths[i].endPoint(), swaths[i].getOutAngle(),
+        swaths[i + 1].startPoint(), swaths[i + 1].getInAngle());
+    }
   }
   return path;
 }

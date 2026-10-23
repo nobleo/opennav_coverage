@@ -128,6 +128,14 @@ protected:
   Path assemblePath(const F2CRoute & route, f2c::pp::TurningBase & curve);
 
   /**
+   * @brief Plan the swaths of one group joined by turns at the curve's own
+   *        discretization (F2C's planPath would resample turns to 0.1 m)
+   * @param swaths Ordered swaths of the group
+   * @param curve Curve generator for turns
+   * @return Path of the group
+   */
+  Path planPath(const Swaths & swaths, f2c::pp::TurningBase & curve) const;
+  /**
    * @brief Append one connection between swath groups to the path
    * @param path Path to append to
    * @param prev Previous swath group (may be empty at the route start)
