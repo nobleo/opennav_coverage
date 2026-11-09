@@ -149,6 +149,8 @@ TEST(UtilsTests, TesttoNavPathMsg)
 {
   std_msgs::msg::Header header_in;
   header_in.frame_id = "test";
+  header_in.stamp.sec = 123;
+  header_in.stamp.nanosec = 456;
   Path path_in;
   path_in.getStates().resize(10);
   // v2 default-initializes PathState::type to SWATH; mark as TURN so each state
@@ -161,6 +163,9 @@ TEST(UtilsTests, TesttoNavPathMsg)
   auto msg = util::toNavPathMsg(path_in, field, header_in, true, 0.1);
   EXPECT_EQ(msg.header.frame_id, "test");
   EXPECT_EQ(msg.poses.size(), 10u);
+  for (const auto & pose : msg.poses) {
+    EXPECT_EQ(pose.header, header_in);
+  }
 
   // A single straight SWATH state must be densified: len 1.0 at pt_dist 0.1 -> ~10 poses.
   Path swath_path;
@@ -169,6 +174,9 @@ TEST(UtilsTests, TesttoNavPathMsg)
     f2c::types::PathDirection::FORWARD, f2c::types::PathSectionType::SWATH);
   auto swath_msg = util::toNavPathMsg(swath_path, field, header_in, true, 0.1);
   EXPECT_GE(swath_msg.poses.size(), 9u);
+  for (const auto & pose : swath_msg.poses) {
+    EXPECT_EQ(pose.header, header_in);
+  }
 }
 
 TEST(UtilsTests, TesttoCoveragePathMsg2)
