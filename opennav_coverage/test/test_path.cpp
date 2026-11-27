@@ -195,4 +195,32 @@ TEST(PathTests, TestpathGenerationMultiCellConnections)
   EXPECT_TRUE(std::isfinite(path.getTaskTime()));
 }
 
+TEST(PathTests, TestAlwaysTurnBetweenSwaths)
+{
+  auto node = std::make_shared<rclcpp::Node>("test_node");
+  RobotParams robot_params(node);
+  PathShim generator(node, &robot_params);
+
+  // The connection detours far beyond 1.3x the direct distance between the swaths
+  F2CRoute route;
+  route.addSwaths(F2CSwaths{F2CSwath(F2CLineString({F2CPoint(0, 0), F2CPoint(10, 0)}))});
+  route.addConnection(F2CMultiPoint({F2CPoint(20, 0), F2CPoint(20, 2)}));
+  route.addSwaths(F2CSwaths{F2CSwath(F2CLineString({F2CPoint(10, 2), F2CPoint(0, 2)}))});
+
+  opennav_coverage_msgs::msg::PathMode settings;
+  auto count_connection_states = [&]() {
+      const auto path = generator.generatePath(route, settings);
+      size_t count = 0;
+      for (size_t i = 0; i < path.size(); ++i) {
+        count += path[i].type == f2c::types::PathSectionType::HL_SWATH;
+      }
+      return count;
+    };
+
+  generator.setAlwaysTurnBetweenSwaths(false);
+  EXPECT_GT(count_connection_states(), 0u);
+  generator.setAlwaysTurnBetweenSwaths(true);
+  EXPECT_EQ(count_connection_states(), 0u);
+}
+
 }  // namespace opennav_coverage

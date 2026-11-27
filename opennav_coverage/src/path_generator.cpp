@@ -142,7 +142,10 @@ void PathGenerator::appendConnection(
 
   // Near-straight hop between two swath groups: one curve (the u-turn). Boundary
   // connections (to/from a TSP start point) fall through to keep that point.
-  if (has_prev && has_next && polyline_len < 1.3 * std::max(direct_len, 1e-6)) {
+  // always_turn_between_swaths_ skips the detour check, so every hop is a turn.
+  if (has_prev && has_next &&
+    (always_turn_between_swaths_ || polyline_len < 1.3 * std::max(direct_len, 1e-6)))
+  {
     path += curve.createTurn(
       robot, prev.back().endPoint(), prev.back().getOutAngle(),
       next[0].startPoint(), next[0].getInAngle());
